@@ -70,3 +70,5 @@ TODO: Parametrize the name and squadron parsing.
 ## Acknowledgments and Bug Reports
 
 GreenieBoard was created by Niklas 'Madgrim' Elmqvist, F-14A RIO in VF-111 (BelomarFleetfoot#0319 on Discord). Please direct bug reports to me.
+
+The idea for this application, as well as the subject matter expertise, was provided by Flash, CO of VF-111. Further feedback, bug reports, and suggestions have been provided by many other members of VF-111. 
