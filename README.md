@@ -61,6 +61,10 @@ All of the configuration settings can be found near the top of `GreenieBoard.py`
 
 To test whether your setup is working, collect some traps into the CSV file and then run `GreenieBoard.py` (no command line arguments). If you did things correctly, you should see the two spreadsheets being populated with data.
 
+Once everything is working, clear out landing events in Main Feed and delete the pilot worksheets. Also delete the monthly greenie boards in the greenie sheet. These will be repopulated once you run the scheduled app for the first time. Then schedule the program to be run regularly. Updating Google Sheets does take some time, so I would not recommend you run this more often than once per minute. In fact, to avoid coming up against request quota limits, you may want to run this at 5-minute intervals. 
+
+If you do encounter quota limits from Google Cloud, please let me know. There may be further ways to optimize the code and/or inserting arbitrary delays to avoid this restriction.
+
 ## Pilot Naming Convention
 
 Currently, GreenieBoard uses a hard-coded naming convention as follows: `Callsign | Modex | Squadron`. An example would be `Madgrim | 211 | VF-111`. If you want to customize this naming convention to your server, edit the function titled `parse_pilot()`.
