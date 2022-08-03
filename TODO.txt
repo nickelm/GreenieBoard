@@ -1,0 +1,36 @@
+------------------------------------------------------------------------------------------
+TODO - GreenieBoard
+------------------------------------------------------------------------------------------
+
+General:
+[ ] Parametrize the name and squadron parsing
+[X] Check the output for the edited file for lsoBot
+[X] Generate CSV from lsoBot
+[X] Read the lsobot file from CSV
+[X] Upload data into Google Sheets
+[X] Only upload new data
+[X] Connect to a separate greenie board
+[X] Summarize into a greenie board
+[X] Greenie board grade info
+[X] Format the cells according to grade
+[X] Pilots remove squadron and modex
+[X] Calculate landing stats and rating stats
+
+Installation 
+[ ] Provide a patch file to apply to LSOBOT.
+[ ] Automate dependencies using pipenv
+[X] Write installation notes
+
+Bugs:
+[ ] Even if multiple servers are supported, statistics will be local to each CSV file
+[ ] When more than 35 landings, overwrite to beginning
+
+Quota limits: 
+[X] Load all of the data to avoid quota limits
+[X] Load all of the landings once in the feed 
+
+Processing:
+[X] Parse grade into comments, wire, etc
+[X] Organize worksheets for each pilot
+[X] Extract just the grade
+[X] WO(FD) is NC
