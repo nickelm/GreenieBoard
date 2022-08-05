@@ -342,8 +342,8 @@ def parse_pilot(pilot):
         squadron = names[1].strip()
     elif len(names) == 3:
         callsign = names[0].strip()
-        modex = names[2].strip()
-        squadron = names[3].strip()
+        modex = names[1].strip()
+        squadron = names[2].strip()
 
     return (callsign, modex, squadron)
 
