@@ -42,21 +42,20 @@ class Pilot:
         self.points = 0.0
         self.months = {}
 
-    def add_landing(self, date, grade):
+    def add_landing(self, date, points):
 
         # Ignore wave offs
-        if grade['score'] == -1:
-            return
+        if points == -1: return
 
         # Update global stats
         self.landings = self.landings + 1
-        self.points = self.points + grade['score']
+        self.points = self.points + points
 
         # Now update monthly stats
         if date not in self.months:
             self.months[date] = { 'landings': 0, 'points': 0 }
         self.months[date]['landings'] = self.months[date]['landings'] + 1
-        self.months[date]['points'] = self.months[date]['points'] + grade['score']
+        self.months[date]['points'] = self.months[date]['points'] + points
 
     def get_stats(self):
         return (self.landings, self.points / self.landings)
@@ -129,7 +128,8 @@ class GreenieBoard:
 
             # Delete the old grade and append the new one
             self.data[row].pop(2)
-            self.data[row].extend(tokens)
+            self.data[row].insert(2, tokens[0])
+            self.data[row].insert(3, tokens[1])
 
             # Calculate the point score
             score = score_grade(tokens[0], tokens[1])
@@ -154,13 +154,6 @@ class GreenieBoard:
             for cell in range(len(self.data[row])):
                 self.data[row][cell] = self.data[row][cell].strip()
 
-            # Store the stats
-            callsign, _, _ = parse_pilot(self.data[row][1])
-            date = parse_date(self.data[row][0])
-            if callsign not in self.stats:
-                self.stats[callsign] = Pilot(callsign)
-            self.stats[callsign].add_landing(date, score)
-
             # Then copy it 
             cleaned_data.append(self.data[row])
 
@@ -168,69 +161,88 @@ class GreenieBoard:
         self.data = cleaned_data
         eprint(str(len(self.data)) + " items retained after cleaning.")
 
-    def save_event(self, callsign, event, sheet):
+    def save_event(self, callsign, squadron, event, sheet):
 
+        # Convenience variables
         grade = event[2]
         comments = event[3]
+        night = event[4]
+        wire = event[5]
 
         # Parse the date
         board_name = parse_date(event[0])
-        if board_name == None:
-            return
+        if board_name == None: return
 
         # Do we need a new worksheet for this year and month?
-        greenie = get_worksheet_by_name(sheet, board_name)
-        if greenie == None:
-            template = get_worksheet_by_name(sheet, 'Template')
+        try: greenie = sheet.worksheet(board_name)
+        except: 
+            template = sheet.worksheet('Template')
             greenie = sheet.duplicate_sheet(template.id, insert_sheet_index=0, new_sheet_name=board_name)
 
+            # If we added a new sheet, invalidate the cache
+            if squadron in self.grid_cache:
+                del self.grid_cache[squadron]
+
+        # Is there a cache?
+        if squadron not in self.grid_cache: 
+            self.grid_cache[squadron] = greenie.get('C9:AP22')
+        grid = self.grid_cache[squadron]
+
         # Now find the row with the pilot's name
-        cell = greenie.find(callsign, case_sensitive=False)
+        found_row = -1
+        for i in range(len(grid)):
+            if not grid[i] or len(grid[i]) == 0: continue
+            if grid[i][0].casefold() == callsign.casefold():
+                found_row = i
+                break
 
-        # If it doesn't exist, just get out
-        if cell == None:
-            return
-
-        # Read the entire row
-        row = greenie.row_values(cell.row)
+        # If the pilot doesn't exist, just get out
+        if found_row == -1: return
 
         # Find the first free slot
         # FIXME: overwrite from the beginning
-        col = len(row) + 1
-        if col < emptySlotIndexStart:
-            col = emptySlotIndexStart
-        if col > emptySlotIndexEnd:
-            col = emptySlotIndexEnd
+        col = len(grid[found_row])
+        if col < 5: col = 5
+        if col >= emptySlotTotal: col = emptySlotTotal - 1
 
-        # Add the trap to the cell
-        cell = greenie.cell(cell.row, col)
-        greenie.update_acell(cell.address, event[4])
+        # Add the trap to the cell (and the cache)
+        a1 = gspread.utils.rowcol_to_a1(9 + found_row, col + 3)
+        greenie.update_acell(a1, wire)
+        while len(grid[found_row]) <= col:
+            grid[found_row].append([])
 
         # Figure out formatting
         score = score_grade(grade, comments)
 
         # Set the formatting appropriately
-        greenie.format(cell.address, {
+        greenie.format(a1, {
             "backgroundColor": { "red": score["red"], "green": score["green"], "blue": score["blue"] },
             "textFormat": { "underline": score["underline"] }
         })
 
-        # Now update the stats
+        # Add a note if this is a night landing
+        if night == "True":
+            greenie.insert_note(a1, "Night")
+
+        # Now update the stats 
+        # FIXME: Only update the stats once
         pilot_stats = self.stats[callsign].get_stats_list(board_name)
-        greenie.update('D' + str(cell.row) + ":G" + str(cell.row), pilot_stats)
+        greenie.update('D' + str(9 + found_row) + ":G" + str(9 + found_row), pilot_stats)
 
     def save_summary(self, sheets):
+
+        # Initialize the cache (to minimize reads)
+        self.grid_cache = {}
 
         # Step through all of the pilots
         for pilot in self.new_pilot_events:
 
             # Parse the pilot name
-            callsign, modex, squadron = parse_pilot(pilot)
-            if not callsign: return
+            callsign, _, squadron = parse_pilot(pilot)
+            if not callsign: continue
 
             # Find the correct greenie board
-            if squadron not in sheets:
-                return
+            if squadron not in sheets: continue
             sheet_url = sheets[squadron]
 
             # Open the google sheet
@@ -238,15 +250,44 @@ class GreenieBoard:
 
             # Step through the events
             for event in self.new_pilot_events[pilot]:
-                self.save_event(callsign, event, sheet)
-    
+                eprint("-- Updating  " + squadron + " greenie board for " + callsign + "...")
+                self.save_event(callsign, squadron, event, sheet)
+                time.sleep(event_sleep_time)
+
+    def calc_stats(self, sheet_url):
+
+        # Open the google sheet
+        sheet = open_gspread(sheet_url)
+
+        # Get the stats sheet of the spreadsheet
+        try: feed_sheet = sheet.worksheet('Feed')
+        except: return
+
+        # Now read the entire sheet 
+        # FIXME: This could get costly
+        all_data = feed_sheet.get_values()
+        
+        # Just pop off the header of the data
+        all_data.pop(0)
+
+        # Calculate the stats
+        for row in range(len(all_data)):
+            callsign, _, _ = parse_pilot(all_data[row][1])
+            date = parse_date(all_data[row][0])
+            try: score = int(all_data[row][6])
+            except: continue
+            if callsign not in self.stats:
+                 self.stats[callsign] = Pilot(callsign)
+            self.stats[callsign].add_landing(date, score)
+                
     def save_feed(self, sheet_url):
 
         # Open the google sheet
         sheet = open_gspread(sheet_url)
 
         # Get the feed sheet of the spreadsheet
-        feed_sheet = get_worksheet_by_name(sheet, 'Main Feed')
+        try: feed_sheet = sheet.worksheet('Feed')
+        except: return
 
         # Read the entire date column
         date_col = feed_sheet.col_values(1)
@@ -268,26 +309,17 @@ class GreenieBoard:
                 continue
 
             # Insert the new data
+            pilot = curr_row[1]
             feed_sheet.append_row(curr_row)
             new_rows = new_rows + 1
-
-            # Now find the pilot worksheet
-            pilot = curr_row[1]
-            callsign, _, _ = parse_pilot(pilot)
-            pilot_sheet = get_worksheet_by_name(sheet, callsign)
-
-            # If no such sheet, create it
-            if pilot_sheet == None: 
-                template = get_worksheet_by_name(sheet, 'Template')
-                pilot_sheet = sheet.duplicate_sheet(template.id, insert_sheet_index=1, new_sheet_name=callsign)
-
-            # Now add to the pilot worksheet as well
-            pilot_sheet.append_row(curr_row)
 
             # Finally, add it to our dictionary since it is new
             if pilot not in self.new_pilot_events:
                 self.new_pilot_events[pilot] = []
             self.new_pilot_events[pilot].append(curr_row)
+
+            # Sleep (to avoid quota limits reached)
+            time.sleep(feed_sleep_time)
 
         # Print status message
         eprint('Added ' + str(new_rows) + ' rows to the sheet.')
@@ -352,14 +384,6 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def get_worksheet_by_name(sheet, name):
-    all_sheets = sheet.worksheets()
-    for curr_sheet in all_sheets:
-        if curr_sheet.title == name:
-            return curr_sheet
-    return None
-
-
 def score_grade(grade, comments):
 
     # Predefined grades, scores, and formatting 
@@ -395,6 +419,9 @@ def main():
 
     # Save to the feed sheet
     board.save_feed(feed_url)
+
+    # Calculate the global stats
+    board.calc_stats(feed_url)
 
     # Save the new events the greenie summary sheet
     board.save_summary(greenie_sheets)

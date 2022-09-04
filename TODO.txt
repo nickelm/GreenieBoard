@@ -3,7 +3,9 @@ TODO - GreenieBoard
 ------------------------------------------------------------------------------------------
 
 General:
-[ ] Parametrize the name and squadron parsing
+[X] Parametrize the name and squadron parsing
+[X] Create Main Feed if it does not exist
+[X] Minimize reads and writes
 [X] Check the output for the edited file for lsoBot
 [X] Generate CSV from lsoBot
 [X] Read the lsobot file from CSV
@@ -15,6 +17,10 @@ General:
 [X] Format the cells according to grade
 [X] Pilots remove squadron and modex
 [X] Calculate landing stats and rating stats
+[X] Remove the individual pilot feeds (not needed)
+[X] Detect night landings from mission file name
+[X] Add a note for night landings
+[X] Global stats in feed sheet
 
 Installation 
 [ ] Provide a patch file to apply to LSOBOT.
@@ -22,7 +28,7 @@ Installation
 [X] Write installation notes
 
 Bugs:
-[ ] Even if multiple servers are supported, statistics will be local to each CSV file
+[X] Even if multiple servers are supported, statistics will be local to each CSV file
 [ ] When more than 35 landings, overwrite to beginning
 
 Quota limits: 
