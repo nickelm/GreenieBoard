@@ -32,6 +32,18 @@ greenie_sheets = {
     'squadron name': 'url_to_google_sheet'
 }
 
+# Predefined grades, scores, and formatting 
+grade_list = {
+    "Perfect": { "score": 5, "token": "", "red": 100 / 255.0, "green": 200 / 255.0, "blue": 50 / 255.0, "underline": True }, 
+    "Acceptable": { "score": 4, "token": "", "red": 100 / 255.0, "green": 200 / 255.0, "blue": 50 / 255.0, "underline": False }, 
+    "Fair": { "score": 3, "token": "", "red": 240 / 255.0, "green": 220 / 255.0, "blue": 0 / 255.0, "underline": False }, 
+    "No Grade": { "score": 2, "token": "", "red": 150 / 255.0, "green": 85 / 255.0, "blue": 0 / 255.0, "underline": False }, 
+    "WO(FD)": { "score": -1, "token": "NC", "red": 255 / 255.0, "green": 255 / 255.0, "blue": 255 / 255.0, "underline": False }, 
+    "Bolter": { "score": 2, "token": "B", "red": 11 / 255.0, "green": 83 / 255.0, "blue": 148 / 255.0, "underline": False }, 
+    "Wave Off": { "score": 1, "token": "-", "red": 204 / 255.0, "green": 0 / 255.0, "blue": 0 / 255.0, "underline": False }, 
+    "CUT": { "score": 0, "token": "C", "red": 0 / 255.0, "green": 255 / 255.0, "blue": 255 / 255.0, "underline": False }
+}
+
 # --- Classes
 
 class Pilot: 
@@ -385,18 +397,6 @@ def eprint(*args, **kwargs):
 
 
 def score_grade(grade, comments):
-
-    # Predefined grades, scores, and formatting 
-    grade_list = {
-        "Perfect": { "score": 5, "token": "", "red": 106 / 255.0, "green": 168 / 255.0, "blue": 79 / 255.0, "underline": True }, 
-        "Acceptable": { "score": 4, "token": "", "red": 241 / 255.0, "green": 168 / 255.0, "blue": 79 / 255.0, "underline": False }, 
-        "Fair": { "score": 3, "token": "", "red": 180 / 255.0, "green": 194 / 255.0, "blue": 50 / 255.0, "underline": False }, 
-        "No Grade": { "score": 2, "token": "", "red": 180 / 255.0, "green": 95 / 255.0, "blue": 6 / 255.0, "underline": False }, 
-        "WO\(FD\)": { "score": -1, "token": "NC", "red": 255 / 255.0, "green": 255 / 255.0, "blue": 255 / 255.0, "underline": False }, 
-        "Bolter": { "score": 2, "token": "B", "red": 11 / 255.0, "green": 83 / 255.0, "blue": 148 / 255.0, "underline": False }, 
-        "Wave Off": { "score": 1, "token": "-", "red": 204 / 255.0, "green": 0 / 255.0, "blue": 0 / 255.0, "underline": False }, 
-        "CUT": { "score": 0, "token": "C", "red": 0 / 255.0, "green": 255 / 255.0, "blue": 255 / 255.0, "underline": False }
-    }
 
     # Look for this grade 
     for curr in grade_list:
